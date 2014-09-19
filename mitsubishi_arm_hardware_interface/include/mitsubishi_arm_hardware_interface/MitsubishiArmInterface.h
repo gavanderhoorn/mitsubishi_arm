@@ -79,5 +79,6 @@ private:
               hardware_interface::PositionJointInterface &jnt_pos_interface);
 
     int startRobot();
+    void stopRobot();
 };
 

@@ -13,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
 )
 
+find_package(Boost REQUIRED COMPONENTS system)
+
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES mitsubishi_arm_hardware_interface
@@ -29,17 +31,19 @@ catkin_package(
 # include_directories(include)
 include_directories(include 
   ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
-
 add_library(mitsubishi_arm_hardware_interface src/MitsubishiArmInterface.cpp)
-add_library(mitsubishi_arm_hardware_interface_dummy src/MitsubishiArmInterfaceDummy.cpp)
+set_target_properties(mitsubishi_arm_hardware_interface PROPERTIES COMPILE_FLAGS "-Wall -g -O0")
+#add_library(mitsubishi_arm_hardware_interface_dummy src/MitsubishiArmInterfaceDummy.cpp)
 
 
 add_executable(mitsubishi_arm_hardware_interface_node src/Robot.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(mitsubishi_arm_hardware_interface_node mitsubishi_arm_hardware_interface
    ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
 )
 
 #add_executable(joint_trajectory_action_client src/jointTrajectoryActionClient.cpp)
@@ -61,8 +65,8 @@ target_link_libraries(mitsubishi_arm_hardware_interface_node mitsubishi_arm_hard
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-install(PROGRAMS
-   scripts/joint_state_publisher
-   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+#install(PROGRAMS
+#   scripts/joint_state_publisher
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#)
 

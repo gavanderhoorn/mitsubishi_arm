@@ -39,6 +39,12 @@ MitsubishiArmInterface::MitsubishiArmInterface(const std::string &host_addr, con
 
 MitsubishiArmInterface::~MitsubishiArmInterface()
 {
+  if(robot_started_)
+  {
+    stopRobot();
+    mxt_socket_.close();
+    ctrl_socket_.close();
+  }
 }
 
 int MitsubishiArmInterface::initializeSockets(void)
@@ -68,40 +74,6 @@ int MitsubishiArmInterface::initializeSockets(void)
   }
   return 0;
 }
-
-//int MitsubishiArmInterface::initializeSockets(void)
-//{
-
-//// Create sockets
-//// Initialize address structures
-//// TCP for ctrl port
-//struct addrinfo ctrl_hints, *ctrl_res;
-//memset(&ctrl_hints, 0, sizeof(ctrl_sock_addr_));
-//ctrl_hints.ai_family = AF_UNSPEC;
-//ctrl_hints.ai_socktype = SOCK_STREAM;
-//getaddrinfo(host_addr_.c_str(), ctrl_port_.c_str(), &ctrl_hints, &ctrl_res);
-//ctrl_fd_ = socket(ctrl_res->ai_family, ctrl_res->ai_socktype, ctrl_res->ai_protocol);
-
-
-//// UDP for mxt Real-time control
-//struct addrinfo mxt_hints, *mxt_res;
-//memset(&mxt_hints, 0, sizeof(mxt_sock_addr_));
-//mxt_hints.ai_family = AF_UNSPEC;
-//mxt_hints.ai_socktype = SOCK_DGRAM;
-//getaddrinfo(host_addr_.c_str(), mxt_port_.c_str(), &mxt_hints, &mxt_res);
-//mxt_fd_ = socket(mxt_res->ai_family, mxt_res->ai_socktype, mxt_res->ai_protocol);
-
-//if(ctrl_fd_ < 0 || mxt_fd_ < 0) {
-//ROS_FATAL_STREAM("Socket creation unsuccessful.");
-//return -1;
-//}
-
-//if (connect(ctrl_fd_, ctrl_res->ai_addr, ctrl_res->ai_addrlen) < 0){
-//ROS_FATAL_STREAM("Error connecting to control port");
-//return -1;
-//}
-
-//}
 
 bool MitsubishiArmInterface::init()
 {
@@ -185,6 +157,18 @@ int MitsubishiArmInterface::startRobot()
   }
 }
 
+void MitsubishiArmInterface::stopRobot()
+{
+  // Just send the password return the result
+  MXTCMD end_cmd;
+  memset(&end_cmd, 0, sizeof(end_cmd));
+  end_cmd.BitMask = 0xffff; // Not sure if this is needed
+  end_cmd.Command = MXT_CMD_END;
+
+  mxt_socket_.send(boost::asio::buffer((char *)&end_cmd, sizeof(end_cmd)));
+  robot_started_ = false;
+}
+
 void MitsubishiArmInterface::readHW()
 {
   MXTCMD joint_cmd;
@@ -248,85 +232,19 @@ void MitsubishiArmInterface::writeHW() {
   //    << cmd_[4] << " "
   //    << cmd_[5] << std::endl;
 
-  /*
-   *  if(isEqual(cmd_previous_[0],cmd_[0],0.00001)&&
-   *      isEqual(cmd_previous_[1],cmd_[1],0.00001)&&
-   *      isEqual(cmd_previous_[2],cmd_[2],0.00001)&&
-   *      isEqual(cmd_previous_[3],cmd_[3],0.00001)&&
-   *      isEqual(cmd_previous_[4],cmd_[4],0.00001)&&
-   *      isEqual(cmd_previous_[5],cmd_[5],0.00001))
-   *  {
-   *
-   *    cmd_previous_=cmd_;
-   *    return;
-   *  }
-   *  static int new_command_count=0;
-   *  new_command_count++;
-   *  std::cout << "new command:"<< new_command_count << std::endl;
-   *  //boost::mutex::scoped_lock lock(io_mutex);
-   *  // WRITE MOVE to robot
-   *  unsigned char cmd_msg[] = "2\r\n";
-   *  int n_written = 0;
-   *
-   *  do
-   *  {
-   *    n_written += write( USB, &cmd_msg[n_written], 1 );
-   *  }
-   *  while (cmd_msg[n_written-1] != '\n');
-   *
-   *  // READ RESPONSE (M)
-   *  char buf [256];
-   *  memset (&buf, '\0', sizeof buf);
-   *  int n = 0;
-   *  std::string response;
-   *
-   *  do
-   *  {
-   *    n += read( USB, &buf, 1);
-   *    response.append( buf );
-   *  }
-   *  while( buf[0] != '\n');
-   *
-   *  if (response.find("M\r\n") == std::string::npos)
-   *  {
-   *    std::cout << "didn-t find M!" << '\n';
-   *    exit(-1);
-   *  }
-   *
-   *  response.clear();
-   *  // END READ
-   *
-   *  std::stringstream write_msg;
-   *  //std::cout << cmd_[1] << std::endl;
-   *  write_msg << double(cmd_[0]) << "," <<cmd_[1] << "," << cmd_[2] << "," << cmd_[3] << "," << cmd_[4] << "," << cmd_[5] << "\r\n";
-   *
-   *  std::string write_str=write_msg.str();
-   *  //std::cout << "writing command:" << write_str<< std::endl;
-   *
-   *  // Write command
-   *  write( USB, write_str.c_str(), write_str.size());
-   *  cmd_previous_=cmd_;
-   *  // READ RESPONSE (E)
-   *  memset (&buf, '\0', sizeof buf);
-   *  n = 0;
-   *  //std::cout << "getting respoinse"<< std::endl;
-   *
-   *  do
-   *  {
-   *    n += read( USB, &buf, 1);
-   *    response.append( buf );
-   *  }
-   *  while( buf[0] != '\n');
-   *
-   *  if (response.find("E\r\n") == std::string::npos)
-  *  {
-    *    std::cout << "didn-t find E!" << '\n';
-    *    exit(-1);
-    *  }
-  */
+    //if(isEqual(cmd_previous_[0],cmd_[0],0.00001)&&
+    //    isEqual(cmd_previous_[1],cmd_[1],0.00001)&&
+    //    isEqual(cmd_previous_[2],cmd_[2],0.00001)&&
+    //    isEqual(cmd_previous_[3],cmd_[3],0.00001)&&
+    //    isEqual(cmd_previous_[4],cmd_[4],0.00001)&&
+    //    isEqual(cmd_previous_[5],cmd_[5],0.00001))
+    //{
+  
+    //  cmd_previous_=cmd_;
+    //  return;
+    //}
 
-
-    // END READ
+    pos_ = cmd_;
 }
 
 
