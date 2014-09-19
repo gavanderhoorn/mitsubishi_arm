@@ -6,15 +6,23 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "mitsubishi_arm_hardware_interface");
     ros::NodeHandle node;
 
-    hardware_interface::JointStateInterface  jnt_state_interface_;
-    hardware_interface::PositionJointInterface jnt_pos_interface_;
+    std::string host_addr;
+    std::string ctrl_port;
+    std::string mtx_port;
 
-    std::string port;
+    node.param<std::string>("mitsubishi_host", host_addr, "192.168.0.1");
+    node.param<std::string>("mitsubishi_mtx_port", mtx_port, "10000"); // real-time control
+    node.param<std::string>("mitsubishi_port", ctrl_port, "10003"); // control servo
 
-    node.param<std::string>("mitsubishi_port", port, "/dev/ttyUSB1");
+    ROS_INFO_STREAM("IP " << host_addr << " Ports " << ctrl_port << " " << mtx_port);
+    MitsubishiArmInterface robot(host_addr, ctrl_port, mtx_port);
 
-    MitsubishiArmInterface robot(port);
-    robot.init(jnt_state_interface_, jnt_pos_interface_);
+    if (!robot.init())
+    {
+      ROS_FATAL_STREAM("Exiting because robot couldn't be started");
+      return -1;
+    }
+
     controller_manager::ControllerManager cm(&robot, node);
 
     ros::AsyncSpinner spinner(4);
@@ -22,7 +30,7 @@ int main(int argc, char** argv)
 
     ros::Time previous=ros::Time::now();
 
-    ros::Rate rate(1000.0);
+    ros::Rate rate(100.0);
     while (ros::ok())
     {
         ros::Duration period;
@@ -31,6 +39,7 @@ int main(int argc, char** argv)
         period=now-previous;
         //std::cout << "period:"<<period<<std::endl;
         cm.update(now, period);
+        previous = now;
         robot.writeHW();
         rate.sleep();
     }

@@ -16,12 +16,8 @@
   <license>TODO</license>
 
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>ros_control</build_depend>
-  <build_depend>ros_controllers</build_depend>
-  <build_depend>robot_mechanism_controllers</build_depend>
-  <run_depend>ros_control</run_depend>
-  <run_depend>ros_controllers</run_depend>
-  <run_depend>robot_mechanism_controllers</run_depend>
+  <build_depend>controller_manager</build_depend>
+  <run_depend>controller_manager</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

@@ -1,370 +1,329 @@
 #include <mitsubishi_arm_hardware_interface/MitsubishiArmInterface.h>
 #include <sstream>
-MitsubishiArmInterface::MitsubishiArmInterface(std::string & port)
+
+using namespace boost;
+using namespace boost::asio::ip;
+
+MitsubishiArmInterface::MitsubishiArmInterface(const std::string &host_addr, const std::string&  ctrl_port, const std::string& mxt_port):
+  host_addr_(host_addr), 
+  ctrl_port_(ctrl_port),
+  mxt_port_(mxt_port),
+  ctrl_socket_(io_service_),
+  mxt_socket_(io_service_)
 {
-    //joint_state_pub=n_priv.advertise<sensor_msgs::JointState>( "joint_states", 1);
 
-    pos.resize(joint_number);
-    vel.resize(joint_number);
-    eff.resize(joint_number);
-    cmd.resize(joint_number);
-    cmd_previous.resize(joint_number);
-
-
-    // Open File Descriptor
-    //USB = open( "/dev/ttyUSB1",  O_RDWR | O_NOCTTY);
-    USB = open( port.c_str(),  O_RDWR | O_NOCTTY);
-    // Error Handling
-    if ( USB < 0 )
-    {
-        std::cout << "Error " << errno << " opening " << port.c_str() << ": " << strerror (errno) << std::endl;
-    }
-
-    // Configure Port
-    memset (&tty, 0, sizeof tty);
-
-    // Error Handling
-    if ( tcgetattr ( USB, &tty ) != 0 )
-    {
-        std::cout << "Error " << errno << " from tcgetattr: " << strerror(errno) << std::endl;
-    }
+  pos_.resize(NUMBER_OF_JOINTS);
+  vel_.resize(NUMBER_OF_JOINTS);
+  eff_.resize(NUMBER_OF_JOINTS);
+  cmd_.resize(NUMBER_OF_JOINTS);
+  cmd_previous_.resize(NUMBER_OF_JOINTS);
+  robot_started_ = false;
 
 
-    // Set Baud Rate
-    cfsetospeed (&tty, B19200);
-    cfsetispeed (&tty, B19200);
+  //char buf [256];
+  //read( USB, &buf, 1); // CLEAN BUFFER
+  //readHW();
 
-    long BAUD    =B19200;
-
-    tty.c_cflag = BAUD | CRTSCTS | CS8 | CLOCAL | CREAD | PARENB;
-
-    tty.c_cc[VMIN]=0;
-    tty.c_cc[VTIME]=20;
-
-    // Flush Port, then applies attributes
-    tcflush( USB, TCIFLUSH );
-
-    if ( tcsetattr ( USB, TCSANOW, &tty ) != 0)
-    {
-        std::cout << "Error " << errno << " from tcsetattr" << std::endl;
-    }
-    else
-        std::cout << "connected successfuly" <<std::endl;
-    usleep(10000);
-
-    char buf [256];
-    read( USB, &buf, 1); // CLEAN BUFFER
-    readHW();
-
-    cmd=pos;
-    cmd_previous=cmd;
-    // convert to radians and add to state
-    for(int i=0; i< pos.size(); ++i)
-    {
-        std::cout << cmd[i] << std::endl;
-    }
+  //cmd_=pos_;
+  //cmd_previous_=cmd_;
+  //// convert to radians and add to state
+  //for(int i=0; i< pos_.size(); ++i) {
+  //  std::cout << cmd_[i] << std::endl;
+  //}
 
 
-    std::cout << "Init done!" << '\n';
+  //std::cout << "Init done!" << '\n';
 
-//    init();
-    return;
+  //    init();
 }
 
 MitsubishiArmInterface::~MitsubishiArmInterface()
 {
-    close(USB);
 }
+
+int MitsubishiArmInterface::initializeSockets(void)
+{
+
+  try
+  {
+    // Create sockets
+    // Initialize address structures
+    // TCP for ctrl port
+    tcp::resolver tcp_resolver(io_service_);
+    tcp::resolver::query tcp_query(tcp::v4(), host_addr_, ctrl_port_);
+    connect(ctrl_socket_, tcp_resolver.resolve(tcp_query));
+
+    // UDP for mxt Real-time control
+    udp::resolver udp_resolver(io_service_);
+    udp::resolver::query udp_query(udp::v4(), host_addr_, mxt_port_);
+    //host_endpoint_ = *udp_resolver.resolve(udp_query);
+    connect(mxt_socket_, udp_resolver.resolve(udp_query));
+    //mxt_socket_.open(udp::v4());
+
+  }
+  catch (std::exception& e)
+  {
+    ROS_FATAL_STREAM("Socket creation unsuccessful.");
+    return -1;
+  }
+  return 0;
+}
+
+//int MitsubishiArmInterface::initializeSockets(void)
+//{
+
+//// Create sockets
+//// Initialize address structures
+//// TCP for ctrl port
+//struct addrinfo ctrl_hints, *ctrl_res;
+//memset(&ctrl_hints, 0, sizeof(ctrl_sock_addr_));
+//ctrl_hints.ai_family = AF_UNSPEC;
+//ctrl_hints.ai_socktype = SOCK_STREAM;
+//getaddrinfo(host_addr_.c_str(), ctrl_port_.c_str(), &ctrl_hints, &ctrl_res);
+//ctrl_fd_ = socket(ctrl_res->ai_family, ctrl_res->ai_socktype, ctrl_res->ai_protocol);
+
+
+//// UDP for mxt Real-time control
+//struct addrinfo mxt_hints, *mxt_res;
+//memset(&mxt_hints, 0, sizeof(mxt_sock_addr_));
+//mxt_hints.ai_family = AF_UNSPEC;
+//mxt_hints.ai_socktype = SOCK_DGRAM;
+//getaddrinfo(host_addr_.c_str(), mxt_port_.c_str(), &mxt_hints, &mxt_res);
+//mxt_fd_ = socket(mxt_res->ai_family, mxt_res->ai_socktype, mxt_res->ai_protocol);
+
+//if(ctrl_fd_ < 0 || mxt_fd_ < 0) {
+//ROS_FATAL_STREAM("Socket creation unsuccessful.");
+//return -1;
+//}
+
+//if (connect(ctrl_fd_, ctrl_res->ai_addr, ctrl_res->ai_addrlen) < 0){
+//ROS_FATAL_STREAM("Error connecting to control port");
+//return -1;
+//}
+
+//}
 
 bool MitsubishiArmInterface::init()
 {
-    // connect and register the joint state interface
-    hardware_interface::JointStateHandle state_handle_j1("j1", &pos[0], &vel[0], &eff[0]);
-    jnt_state_interface.registerHandle(state_handle_j1);
+  if(initializeSockets() != 0){
+    return false;
+  }
+  if (startRobot() != 0)
+  {
+    return false;
+  }
 
-    hardware_interface::JointStateHandle state_handle_j2("j2", &pos[1], &vel[1], &eff[1]);
-    jnt_state_interface.registerHandle(state_handle_j2);
+  // connect and register the joint state interface
+  hardware_interface::JointStateHandle state_handle_j1("j1", &pos_[0], &vel_[0], &eff_[0]);
+  jnt_state_interface_.registerHandle(state_handle_j1);
 
-    hardware_interface::JointStateHandle state_handle_j3("j3", &pos[2], &vel[2], &eff[2]);
-    jnt_state_interface.registerHandle(state_handle_j3);
+  hardware_interface::JointStateHandle state_handle_j2("j2", &pos_[1], &vel_[1], &eff_[1]);
+  jnt_state_interface_.registerHandle(state_handle_j2);
 
-    hardware_interface::JointStateHandle state_handle_j4("j4", &pos[3], &vel[3], &eff[3]);
-    jnt_state_interface.registerHandle(state_handle_j4);
+  hardware_interface::JointStateHandle state_handle_j3("j3", &pos_[2], &vel_[2], &eff_[2]);
+  jnt_state_interface_.registerHandle(state_handle_j3);
 
-    hardware_interface::JointStateHandle state_handle_j5("j5", &pos[4], &vel[4], &eff[4]);
-    jnt_state_interface.registerHandle(state_handle_j5);
+  hardware_interface::JointStateHandle state_handle_j4("j4", &pos_[3], &vel_[3], &eff_[3]);
+  jnt_state_interface_.registerHandle(state_handle_j4);
 
-    hardware_interface::JointStateHandle state_handle_j6("j6", &pos[5], &vel[5], &eff[5]);
-    jnt_state_interface.registerHandle(state_handle_j6);
+  hardware_interface::JointStateHandle state_handle_j5("j5", &pos_[4], &vel_[4], &eff_[4]);
+  jnt_state_interface_.registerHandle(state_handle_j5);
 
-    registerInterface(&jnt_state_interface);
+  hardware_interface::JointStateHandle state_handle_j6("j6", &pos_[5], &vel_[5], &eff_[5]);
+  jnt_state_interface_.registerHandle(state_handle_j6);
 
-    // connect and register the joint position interface
-    hardware_interface::JointHandle pos_handle_j1(jnt_state_interface.getHandle("j1"), &cmd[0]);
-    jnt_pos_interface.registerHandle(pos_handle_j1);
+  registerInterface(&jnt_state_interface_);
 
-    hardware_interface::JointHandle pos_handle_j2(jnt_state_interface.getHandle("j2"), &cmd[1]);
-    jnt_pos_interface.registerHandle(pos_handle_j2);
+  // connect and register the joint position interface
+  hardware_interface::JointHandle pos_handle_j1(jnt_state_interface_.getHandle("j1"), &cmd_[0]);
+  jnt_pos_interface_.registerHandle(pos_handle_j1);
 
-    hardware_interface::JointHandle pos_handle_j3(jnt_state_interface.getHandle("j3"), &cmd[2]);
-    jnt_pos_interface.registerHandle(pos_handle_j3);
+  hardware_interface::JointHandle pos_handle_j2(jnt_state_interface_.getHandle("j2"), &cmd_[1]);
+  jnt_pos_interface_.registerHandle(pos_handle_j2);
 
-    hardware_interface::JointHandle pos_handle_j4(jnt_state_interface.getHandle("j4"), &cmd[3]);
-    jnt_pos_interface.registerHandle(pos_handle_j4);
+  hardware_interface::JointHandle pos_handle_j3(jnt_state_interface_.getHandle("j3"), &cmd_[2]);
+  jnt_pos_interface_.registerHandle(pos_handle_j3);
 
-    hardware_interface::JointHandle pos_handle_j5(jnt_state_interface.getHandle("j5"), &cmd[4]);
-    jnt_pos_interface.registerHandle(pos_handle_j5);
+  hardware_interface::JointHandle pos_handle_j4(jnt_state_interface_.getHandle("j4"), &cmd_[3]);
+  jnt_pos_interface_.registerHandle(pos_handle_j4);
 
-    hardware_interface::JointHandle pos_handle_j6(jnt_state_interface.getHandle("j6"), &cmd[5]);
-    jnt_pos_interface.registerHandle(pos_handle_j6);
+  hardware_interface::JointHandle pos_handle_j5(jnt_state_interface_.getHandle("j5"), &cmd_[4]);
+  jnt_pos_interface_.registerHandle(pos_handle_j5);
 
-    registerInterface(&jnt_pos_interface);
+  hardware_interface::JointHandle pos_handle_j6(jnt_state_interface_.getHandle("j6"), &cmd_[5]);
+  jnt_pos_interface_.registerHandle(pos_handle_j6);
+
+  registerInterface(&jnt_pos_interface_);
+
+  return true;
 }
 
-bool MitsubishiArmInterface::init(hardware_interface::JointStateInterface  & jnt_state_interface_,
-                                  hardware_interface::PositionJointInterface & jnt_pos_interface_)
+int MitsubishiArmInterface::startRobot()
 {
+  // Just send the password return the result
+  char buf[] = ROBOT_PASSWORD;
+  boost::asio::write(ctrl_socket_, boost::asio::buffer(buf, strlen(buf)));
 
-    // connect and register the joint state interface
-    hardware_interface::JointStateHandle state_handle_j1("j1", &pos[0], &vel[0], &eff[0]);
-    jnt_state_interface_.registerHandle(state_handle_j1);
+  //char reply[MAXBUFLEN];
+  boost::asio::streambuf reply;
+  boost::asio::read_until(ctrl_socket_, reply,'\r');
 
-    hardware_interface::JointStateHandle state_handle_j2("j2", &pos[1], &vel[1], &eff[1]);
-    jnt_state_interface_.registerHandle(state_handle_j2);
+  // we have  a valid packet
+  std::istream convertor(&reply);
+  int rc = 0;
+  convertor >> rc;
 
-    hardware_interface::JointStateHandle state_handle_j3("j3", &pos[2], &vel[2], &eff[2]);
-    jnt_state_interface_.registerHandle(state_handle_j3);
-
-    hardware_interface::JointStateHandle state_handle_j4("j4", &pos[3], &vel[3], &eff[3]);
-    jnt_state_interface_.registerHandle(state_handle_j4);
-
-    hardware_interface::JointStateHandle state_handle_j5("j5", &pos[4], &vel[4], &eff[4]);
-    jnt_state_interface_.registerHandle(state_handle_j5);
-
-    hardware_interface::JointStateHandle state_handle_j6("j6", &pos[5], &vel[5], &eff[5]);
-    jnt_state_interface_.registerHandle(state_handle_j6);
-
-    registerInterface(&jnt_state_interface_);
-
-    // connect and register the joint position interface
-    hardware_interface::JointHandle pos_handle_j1(jnt_state_interface_.getHandle("j1"), &cmd[0]);
-    jnt_pos_interface_.registerHandle(pos_handle_j1);
-
-    hardware_interface::JointHandle pos_handle_j2(jnt_state_interface_.getHandle("j2"), &cmd[1]);
-    jnt_pos_interface_.registerHandle(pos_handle_j2);
-
-    hardware_interface::JointHandle pos_handle_j3(jnt_state_interface_.getHandle("j3"), &cmd[2]);
-    jnt_pos_interface_.registerHandle(pos_handle_j3);
-
-    hardware_interface::JointHandle pos_handle_j4(jnt_state_interface_.getHandle("j4"), &cmd[3]);
-    jnt_pos_interface_.registerHandle(pos_handle_j4);
-
-    hardware_interface::JointHandle pos_handle_j5(jnt_state_interface_.getHandle("j5"), &cmd[4]);
-    jnt_pos_interface_.registerHandle(pos_handle_j5);
-
-    hardware_interface::JointHandle pos_handle_j6(jnt_state_interface_.getHandle("j6"), &cmd[5]);
-    jnt_pos_interface_.registerHandle(pos_handle_j6);
-
-    registerInterface(&jnt_pos_interface_);
-
+  if (rc == 1)
+  {
+    robot_started_ = true;
+    return 0;
+  } 
+  else 
+  {
+    ROS_FATAL_STREAM("Could not start robot");
+    return -1;
+  }
 }
-
-
-
 
 void MitsubishiArmInterface::readHW()
 {
+  MXTCMD joint_cmd;
+  MXTCMD joint_cmd_reply;
+  memset(&joint_cmd, 0, sizeof(joint_cmd));
+  joint_cmd.RecvType= MXT_TYP_JOINT;
+  joint_cmd.BitMask = 0xffff; // Not sure if this is needed
 
-    //boost::mutex::scoped_lock lock(io_mutex);
+  mxt_socket_.send(boost::asio::buffer((char *)&joint_cmd, sizeof(joint_cmd)));
+  mxt_socket_.receive(boost::asio::buffer((char *)&joint_cmd_reply,sizeof(joint_cmd_reply)));
 
-    // WRITE READ to robot
-    unsigned char cmd_msg[] = "1\r\n";
-    int n_written = 0;
+  //boost::mutex::scoped_lock lock(io_mutex);
+  JOINT& jnt = joint_cmd_reply.dat.jnt;
+  pos_[0] = jnt.j1;
+  pos_[1] = jnt.j2;
+  pos_[2] = jnt.j3;
+  pos_[3] = jnt.j4;
+  pos_[4] = jnt.j5;
+  pos_[5] = jnt.j6;
 
-    do
-    {
-        n_written += write( USB, &cmd_msg[n_written], 1 );
-    }
-    while (cmd_msg[n_written-1] != '\n');
-
-
-    // READ RESPONSE (R)
-    char buf [256];
-    memset (&buf, '\0', sizeof buf);
-    int n = 0;
-    std::string response;
-
-    do
-    {
-        n += read( USB, &buf, 1);
-        response.append( buf );
-    }
-    while( buf[0] != '\n');
+  // convert to radians and add to state
+  //for(int i=0; i< pos_.size(); ++i)
+  //{
+  //  pos_[i]=pos_[i]*(DEG_TO_RAD);
+  //}
 
 
-    if (response.find("R\r\n") == std::string::npos)
-    {
-        std::cout << "didn-t find R!" << '\n';
-        exit(-1);
-    }
+  // Not sure if this is necessary
+  eff_[0]=0.0;
+  eff_[1]=0.0;
+  eff_[2]=0.0;
+  eff_[3]=0.0;
+  eff_[4]=0.0;
+  eff_[5]=0.0;
 
-
-    response.clear();
-    // END READ
-
-    // READ JOINTS STATE
-    n_written = 0;
-    memset (&buf, '\0', sizeof buf);
-
-    do
-    {
-        n_written += read( USB, &buf, 1);
-        response.append( buf );
-
-    }
-    while( buf[0] != '\n');
-
-    std::stringstream convertor(response);
-
-    // READ RESPONSE (E)
-    memset (&buf, '\0', sizeof buf);
-    n = 0;
-
-    do
-    {
-        n += read( USB, &buf, 1);
-        response.append( buf );
-    }
-    while( buf[0] != '\n');
-
-    if (response.find("E\r\n") == std::string::npos)
-    {
-        std::cout << "didn-t find E!" << '\n';
-        exit(-1);
-    }
-    // END READ
-
-
-    char dummy_char;
-    convertor >> dummy_char
-              >> pos[0]
-              >> dummy_char
-              >> pos[1]
-              >> dummy_char
-              >> pos[2]
-              >> dummy_char
-              >> pos[3]
-              >> dummy_char
-              >> pos[4]
-              >> dummy_char
-              >> pos[5]
-              >> dummy_char
-              >> pos[6]
-              >> dummy_char;
-
-
-    // convert to radians and add to state
-    for(int i=0; i< pos.size(); ++i)
-    {
-        pos[i]=pos[i]*(DEG_TO_RAD);
-    }
-
-
-    eff[0]=0.0;
-    eff[1]=0.0;
-    eff[2]=0.0;
-    eff[3]=0.0;
-    eff[4]=0.0;
-    eff[5]=0.0;
-
-    vel[0]=0.0;
-    vel[1]=0.0;
-    vel[2]=0.0;
-    vel[3]=0.0;
-    vel[4]=0.0;
-    vel[5]=0.0;
+  vel_[0]=0.0;
+  vel_[1]=0.0;
+  vel_[2]=0.0;
+  vel_[3]=0.0;
+  vel_[4]=0.0;
+  vel_[5]=0.0;
 
 
 }
 
 
-void MitsubishiArmInterface::writeHW()
-{
+void MitsubishiArmInterface::writeHW() {
 
-    if(isEqual(cmd_previous[0],cmd[0],0.00001)&&
-       isEqual(cmd_previous[1],cmd[1],0.00001)&&
-       isEqual(cmd_previous[2],cmd[2],0.00001)&&
-       isEqual(cmd_previous[3],cmd[3],0.00001)&&
-       isEqual(cmd_previous[4],cmd[4],0.00001)&&
-       isEqual(cmd_previous[5],cmd[5],0.00001))
-    {
+  ROS_INFO_STREAM_THROTTLE(0.1, "cmd_: " 
+      << cmd_[0] << " "
+      << cmd_[1] << " "
+      << cmd_[2] << " "
+      << cmd_[3] << " "
+      << cmd_[4] << " "
+      << cmd_[5]);
+  //std::cout << "cmd_: " 
+  //    << cmd_[0] << " "
+  //    << cmd_[1] << " "
+  //    << cmd_[2] << " "
+  //    << cmd_[3] << " "
+  //    << cmd_[4] << " "
+  //    << cmd_[5] << std::endl;
 
-        cmd_previous=cmd;
-        return;
-    }
-    static int new_command_count=0;
-    new_command_count++;
-    std::cout << "new command:"<< new_command_count << std::endl;
-    //boost::mutex::scoped_lock lock(io_mutex);
-    // WRITE MOVE to robot
-    unsigned char cmd_msg[] = "2\r\n";
-    int n_written = 0;
-
-    do
-    {
-        n_written += write( USB, &cmd_msg[n_written], 1 );
-    }
-    while (cmd_msg[n_written-1] != '\n');
-
-    // READ RESPONSE (M)
-    char buf [256];
-    memset (&buf, '\0', sizeof buf);
-    int n = 0;
-    std::string response;
-
-    do
-    {
-        n += read( USB, &buf, 1);
-        response.append( buf );
-    }
-    while( buf[0] != '\n');
-
-    if (response.find("M\r\n") == std::string::npos)
-    {
-        std::cout << "didn-t find M!" << '\n';
-        exit(-1);
-    }
-
-    response.clear();
-    // END READ
-
-    std::stringstream write_msg;
-    //std::cout << cmd[1] << std::endl;
-    write_msg << double(cmd[0]) << "," <<cmd[1] << "," << cmd[2] << "," << cmd[3] << "," << cmd[4] << "," << cmd[5] << "\r\n";
-
-    std::string write_str=write_msg.str();
-    //std::cout << "writing command:" << write_str<< std::endl;
-
-    // Write command
-    write( USB, write_str.c_str(), write_str.size());
-    cmd_previous=cmd;
-    // READ RESPONSE (E)
-    memset (&buf, '\0', sizeof buf);
-    n = 0;
-    //std::cout << "getting respoinse"<< std::endl;
-
-    do
-    {
-        n += read( USB, &buf, 1);
-        response.append( buf );
-    }
-    while( buf[0] != '\n');
-
-    if (response.find("E\r\n") == std::string::npos)
-    {
-        std::cout << "didn-t find E!" << '\n';
-        exit(-1);
-    }
+  /*
+   *  if(isEqual(cmd_previous_[0],cmd_[0],0.00001)&&
+   *      isEqual(cmd_previous_[1],cmd_[1],0.00001)&&
+   *      isEqual(cmd_previous_[2],cmd_[2],0.00001)&&
+   *      isEqual(cmd_previous_[3],cmd_[3],0.00001)&&
+   *      isEqual(cmd_previous_[4],cmd_[4],0.00001)&&
+   *      isEqual(cmd_previous_[5],cmd_[5],0.00001))
+   *  {
+   *
+   *    cmd_previous_=cmd_;
+   *    return;
+   *  }
+   *  static int new_command_count=0;
+   *  new_command_count++;
+   *  std::cout << "new command:"<< new_command_count << std::endl;
+   *  //boost::mutex::scoped_lock lock(io_mutex);
+   *  // WRITE MOVE to robot
+   *  unsigned char cmd_msg[] = "2\r\n";
+   *  int n_written = 0;
+   *
+   *  do
+   *  {
+   *    n_written += write( USB, &cmd_msg[n_written], 1 );
+   *  }
+   *  while (cmd_msg[n_written-1] != '\n');
+   *
+   *  // READ RESPONSE (M)
+   *  char buf [256];
+   *  memset (&buf, '\0', sizeof buf);
+   *  int n = 0;
+   *  std::string response;
+   *
+   *  do
+   *  {
+   *    n += read( USB, &buf, 1);
+   *    response.append( buf );
+   *  }
+   *  while( buf[0] != '\n');
+   *
+   *  if (response.find("M\r\n") == std::string::npos)
+   *  {
+   *    std::cout << "didn-t find M!" << '\n';
+   *    exit(-1);
+   *  }
+   *
+   *  response.clear();
+   *  // END READ
+   *
+   *  std::stringstream write_msg;
+   *  //std::cout << cmd_[1] << std::endl;
+   *  write_msg << double(cmd_[0]) << "," <<cmd_[1] << "," << cmd_[2] << "," << cmd_[3] << "," << cmd_[4] << "," << cmd_[5] << "\r\n";
+   *
+   *  std::string write_str=write_msg.str();
+   *  //std::cout << "writing command:" << write_str<< std::endl;
+   *
+   *  // Write command
+   *  write( USB, write_str.c_str(), write_str.size());
+   *  cmd_previous_=cmd_;
+   *  // READ RESPONSE (E)
+   *  memset (&buf, '\0', sizeof buf);
+   *  n = 0;
+   *  //std::cout << "getting respoinse"<< std::endl;
+   *
+   *  do
+   *  {
+   *    n += read( USB, &buf, 1);
+   *    response.append( buf );
+   *  }
+   *  while( buf[0] != '\n');
+   *
+   *  if (response.find("E\r\n") == std::string::npos)
+  *  {
+    *    std::cout << "didn-t find E!" << '\n';
+    *    exit(-1);
+    *  }
+  */
 
 
     // END READ
