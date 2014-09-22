@@ -48,8 +48,8 @@ typedef struct{
 
 typedef struct{
 	WORLD w;
-	unsigned int sflg1;         // Structural flag 1
-	unsigned int sflg2;         // Structural flag 2
+	uint32_t sflg1;         // Structural flag 1
+	uint32_t sflg2;         // Structural flag 2
 } POSE;
 
 /*************************************************************************/
@@ -58,14 +58,14 @@ typedef struct{
 /* with a motor pulse value. */
 /*************************************************************************/
 typedef struct{
-	long p1;                    // Motor 1 axis
-	long p2;                    // Motor 2 axis
-	long p3;                    // Motor 3 axis
-	long p4;                    // Motor 4 axis
-	long p5;                    // Motor 5 axis
-	long p6;                    // Motor 6 axis
-	long p7;                    // Additional axis 1 (Motor 7 axis)
-	long p8;                    // Additional axis 2 (Motor 8 axis)
+	int32_t p1;                    // Motor 1 axis
+	int32_t p2;                    // Motor 2 axis
+	int32_t p3;                    // Motor 3 axis
+	int32_t p4;                    // Motor 4 axis
+	int32_t p5;                    // Motor 5 axis
+	int32_t p6;                    // Motor 6 axis
+	int32_t p7;                    // Additional axis 1 (Motor 7 axis)
+	int32_t p8;                    // Additional axis 2 (Motor 8 axis)
 } PULSE;
 
 
@@ -73,12 +73,12 @@ typedef struct{
 /* Real-time function communication data packet */
 /************************************************************/
 typedef struct enet_rtcmd_str {
-	unsigned short Command;     // Command
+	uint16_t Command;     // Command
 #define MXT_CMD_NULL 0          // Real-time external command invalid
 #define MXT_CMD_MOVE 1          // Real-time external command valid
 #define MXT_CMD_END 255         // Real-time external command end
-	unsigned short SendType;    // Command data type designation
-	unsigned short RecvType;    // Monitor data type designation
+	uint16_t SendType;    // Command data type designation
+	uint16_t RecvType;    // Monitor data type designation
 	//////////// Command or monitor data type ///
 #define MXT_TYP_NULL 0          // No data
 	// For the command and monitor ////////////////////
@@ -95,47 +95,47 @@ typedef struct enet_rtcmd_str {
 	// For current related monitors //////////////////// <H7A>
 #define MXT_TYP_CMDCUR 10       // Electric current command <H7A>
 #define MXT_TYP_FBKCUR 11       // Electric current feedback <H7A>
-	unsigned short reserve;     // Reserved
+	uint16_t reserve;     // Reserved
 	union rtdata {              // Command data
 		POSE pos;               // XYZ type [mm/rad]
 		JOINT jnt;              // Joint type [rad]
 		PULSE pls;              // Pulse type [pls]
-		long lng1[8];           // Integer type [% / non-unit]
+		int32_t lng1[8];           // Integer type [% / non-unit]
 	} dat;
-	unsigned short SendIOType;  // Send input/output signal data designation
-	unsigned short RecvIOType;  // Return input/output signal data designation
+	uint16_t SendIOType;  // Send input/output signal data designation
+	uint16_t RecvIOType;  // Return input/output signal data designation
 #define MXT_IO_NULL 0           // No data
 #define MXT_IO_OUT  1           // Output signal
 #define MXT_IO_IN   2           // Input signal
 
-	unsigned short BitTop;      // Head bit No.
-	unsigned short BitMask;     // Transmission bit mask pattern designation (0x0001-0xffff)
-	unsigned short IoData;      // Input/output signal data (0x0000-0xffff)
-	unsigned short TCount;      // Timeout time counter value
-	unsigned long  CCount;      // Transmission data counter value
-	unsigned short RecvType1;   // Reply data-type specification 1 .
-	unsigned short reserve1;    // Reserved 1
+	uint16_t BitTop;      // Head bit No.
+	uint16_t BitMask;     // Transmission bit mask pattern designation (0x0001-0xffff)
+	uint16_t IoData;      // Input/output signal data (0x0000-0xffff)
+	uint16_t TCount;      // Timeout time counter value
+	uint32_t  CCount;      // Transmission data counter value
+	uint16_t RecvType1;   // Reply data-type specification 1 .
+	uint16_t reserve1;    // Reserved 1
 	union rtdata1 {             // Monitor data 1 .
 		POSE pos1;              // XYZ type [mm/rad] .
 		JOINT jnt1;             // JOINT type [mm/rad] .
 		PULSE pls1;             // PULSE type [mm/rad] .
-		long lng1[8];           // Integer type [% / non-unit] .
+		int32_t lng1[8];           // Integer type [% / non-unit] .
 	} dat1;
-	unsigned short RecvType2;   // Reply data-type specification 2 .
-	unsigned short reserve2;    // Reserved 2
+	uint16_t RecvType2;   // Reply data-type specification 2 .
+	uint16_t reserve2;    // Reserved 2
 	union rtdata2 {             // Monitor data 2 .
 		POSE pos2;              // XYZ type [mm/rad] .
 		JOINT jnt2;             // JOINT type [mm/rad] .
 		PULSE pls2;             // PULSE type [mm/rad] or Integer type [% / non-unit].
-		long lng2[8];           // Integer type [% / non-unit] .
+		int32_t lng2[8];           // Integer type [% / non-unit] .
 	} dat2;
-	unsigned short RecvType3;   // Reply data-type specification 3 .
-	unsigned short reserve3;    // Reserved 3
+	uint16_t RecvType3;   // Reply data-type specification 3 .
+	uint16_t reserve3;    // Reserved 3
 	union rtdata3 {             // Monitor data 3 .
 		POSE pos3;              // XYZ type [mm/rad] .
 		JOINT jnt3;             // JOINT type [mm/rad] .
 		PULSE pls3;             // PULSE type [mm/rad] or Integer type [% / non-unit].
-		long lng3[8];           // Integer type [% / non-unit] .
+		int32_t lng3[8];           // Integer type [% / non-unit] .
 	} dat3;
 } MXTCMD;
 """)
@@ -144,16 +144,30 @@ class JointServer(DatagramProtocol):
     _mxt_cmd = ffi.new("MXTCMD *")
     _counter = 0
     _last_jnt = [random() * 3.14 for i in xrange(6)]
+    #_last_jnt = [0 for i in xrange(6)]
  
     def datagramReceived(self, datagram, address):
         #print "Received from address: " + str(address)
         #print str(datagram)
-        ffi.buffer(self._mxt_cmd)[:] = datagram
-        self._counter += 1
-        if self._counter > 1000:
-            self._counter = 0 
-            self._last_jnt = [random() * 3.14 for i in xrange(6)]
+        #ffi.buffer(self._mxt_cmd)[:] = datagram
+        #self._counter += 1
+        #if self._counter > 1000:
+        #    self._counter = 0 
+        #    self._last_jnt = [random() * 3.14 for i in xrange(6)]
 
+        #print("Type:", self._mxt_cmd.SendType,
+        #        "RX:",
+        #        self._mxt_cmd.dat.jnt.j1,
+        #        self._mxt_cmd.dat.jnt.j2,
+        #        self._mxt_cmd.dat.jnt.j3,
+        #        self._mxt_cmd.dat.jnt.j4,
+        #        self._mxt_cmd.dat.jnt.j5,
+        #        self._mxt_cmd.dat.jnt.j6,
+        #)
+
+
+
+        self._mxt_cmd.RecvType = 2
         self._mxt_cmd.dat.jnt.j1 = self._last_jnt[0]
         self._mxt_cmd.dat.jnt.j2 = self._last_jnt[1]
         self._mxt_cmd.dat.jnt.j3 = self._last_jnt[2]
