@@ -19,22 +19,20 @@ MitsubishiArmInterface::MitsubishiArmInterface(const std::string &host_addr, con
   cmd_previous_.resize(NUMBER_OF_JOINTS);
   robot_started_ = false;
 
+  eff_[0]=0.0;
+  eff_[1]=0.0;
+  eff_[2]=0.0;
+  eff_[3]=0.0;
+  eff_[4]=0.0;
+  eff_[5]=0.0;
 
-  //char buf [256];
-  //read( USB, &buf, 1); // CLEAN BUFFER
-  //readHW();
+  vel_[0]=0.0;
+  vel_[1]=0.0;
+  vel_[2]=0.0;
+  vel_[3]=0.0;
+  vel_[4]=0.0;
+  vel_[5]=0.0;
 
-  //cmd_=pos_;
-  //cmd_previous_=cmd_;
-  //// convert to radians and add to state
-  //for(int i=0; i< pos_.size(); ++i) {
-  //  std::cout << cmd_[i] << std::endl;
-  //}
-
-
-  //std::cout << "Init done!" << '\n';
-
-  //    init();
 }
 
 MitsubishiArmInterface::~MitsubishiArmInterface()
@@ -84,6 +82,13 @@ bool MitsubishiArmInterface::init()
   {
     return false;
   }
+  ROS_INFO_STREAM("Robot initialized");
+  
+  // This sleep is needed for some reason. Without this readHW hangs
+  ros::Duration(1).sleep(); 
+  readHW();
+  cmd_ = pos_;
+  cmd_previous_ = cmd_;
 
   // connect and register the joint state interface
   hardware_interface::JointStateHandle state_handle_j1("j1", &pos_[0], &vel_[0], &eff_[0]);
@@ -162,7 +167,6 @@ void MitsubishiArmInterface::stopRobot()
   // Just send the password return the result
   MXTCMD end_cmd;
   memset(&end_cmd, 0, sizeof(end_cmd));
-  end_cmd.BitMask = 0xffff; // Not sure if this is needed
   end_cmd.Command = MXT_CMD_END;
 
   mxt_socket_.send(boost::asio::buffer((char *)&end_cmd, sizeof(end_cmd)));
@@ -171,13 +175,12 @@ void MitsubishiArmInterface::stopRobot()
 
 void MitsubishiArmInterface::readHW()
 {
-  MXTCMD joint_cmd;
+  MXTCMD joint_request;
   MXTCMD joint_cmd_reply;
-  memset(&joint_cmd, 0, sizeof(joint_cmd));
-  joint_cmd.RecvType= MXT_TYP_JOINT;
-  joint_cmd.BitMask = 0xffff; // Not sure if this is needed
+  memset(&joint_request, 0, sizeof(joint_request));
+  joint_request.RecvType= MXT_TYP_JOINT;
 
-  mxt_socket_.send(boost::asio::buffer((char *)&joint_cmd, sizeof(joint_cmd)));
+  mxt_socket_.send(boost::asio::buffer((char *)&joint_request, sizeof(joint_request)));
   mxt_socket_.receive(boost::asio::buffer((char *)&joint_cmd_reply,sizeof(joint_cmd_reply)));
 
   //boost::mutex::scoped_lock lock(io_mutex);
@@ -188,63 +191,73 @@ void MitsubishiArmInterface::readHW()
   pos_[3] = jnt.j4;
   pos_[4] = jnt.j5;
   pos_[5] = jnt.j6;
-
-  // convert to radians and add to state
-  //for(int i=0; i< pos_.size(); ++i)
-  //{
-  //  pos_[i]=pos_[i]*(DEG_TO_RAD);
-  //}
-
+  pos_[6] = jnt.j7;
+  pos_[7] = jnt.j8;
 
   // Not sure if this is necessary
-  eff_[0]=0.0;
-  eff_[1]=0.0;
-  eff_[2]=0.0;
-  eff_[3]=0.0;
-  eff_[4]=0.0;
-  eff_[5]=0.0;
-
-  vel_[0]=0.0;
-  vel_[1]=0.0;
-  vel_[2]=0.0;
-  vel_[3]=0.0;
-  vel_[4]=0.0;
-  vel_[5]=0.0;
 
 
 }
 
 
+#define JOINT_EPSILON 0.00001
 void MitsubishiArmInterface::writeHW() {
 
-  ROS_INFO_STREAM_THROTTLE(0.1, "cmd_: " 
+  ROS_INFO_STREAM_THROTTLE(0.1,"cmd_: " 
       << cmd_[0] << " "
       << cmd_[1] << " "
       << cmd_[2] << " "
       << cmd_[3] << " "
       << cmd_[4] << " "
-      << cmd_[5]);
-  //std::cout << "cmd_: " 
-  //    << cmd_[0] << " "
-  //    << cmd_[1] << " "
-  //    << cmd_[2] << " "
-  //    << cmd_[3] << " "
-  //    << cmd_[4] << " "
-  //    << cmd_[5] << std::endl;
+      << cmd_[5] << " "
+      << cmd_[6] << " "
+      << cmd_[7]);
+  ROS_DEBUG_STREAM_THROTTLE(0.1,"cmd_prev_: " 
+      << cmd_previous_[0] << " "
+      << cmd_previous_[1] << " "
+      << cmd_previous_[2] << " "
+      << cmd_previous_[3] << " "
+      << cmd_previous_[4] << " "
+      << cmd_previous_[5]);
 
-    //if(isEqual(cmd_previous_[0],cmd_[0],0.00001)&&
-    //    isEqual(cmd_previous_[1],cmd_[1],0.00001)&&
-    //    isEqual(cmd_previous_[2],cmd_[2],0.00001)&&
-    //    isEqual(cmd_previous_[3],cmd_[3],0.00001)&&
-    //    isEqual(cmd_previous_[4],cmd_[4],0.00001)&&
-    //    isEqual(cmd_previous_[5],cmd_[5],0.00001))
-    //{
-  
-    //  cmd_previous_=cmd_;
-    //  return;
-    //}
+  if(isEqual(cmd_previous_[0],cmd_[0],JOINT_EPSILON)&&
+      isEqual(cmd_previous_[1],cmd_[1],JOINT_EPSILON)&&
+      isEqual(cmd_previous_[2],cmd_[2],JOINT_EPSILON)&&
+      isEqual(cmd_previous_[3],cmd_[3],JOINT_EPSILON)&&
+      isEqual(cmd_previous_[4],cmd_[4],JOINT_EPSILON)&&
+      isEqual(cmd_previous_[5],cmd_[5],JOINT_EPSILON))
+  {
 
-    pos_ = cmd_;
+    // do nothing
+  }
+  else
+  {
+    ROS_INFO_STREAM_THROTTLE(0.1,"New command. Writing to robot");
+
+  }
+  cmd_previous_=cmd_;
+
+  MXTCMD joint_cmd;
+  memset(&joint_cmd, 0, sizeof(joint_cmd));
+  joint_cmd.Command = MXT_CMD_MOVE;
+  joint_cmd.SendType = MXT_TYP_JOINT;
+
+  //POSE& pose = joint_cmd.dat.pos;
+  //pose.w.x = 540;
+  //pose.w.y = -10;
+  //pose.w.z = 685;
+  //pose.w.a = 3.14;
+  //pose.w.b = -0.0017;
+  //pose.w.c = 0.0016;
+  JOINT& jnt = joint_cmd.dat.jnt;
+  jnt.j1 = cmd_[0];
+  jnt.j2 = cmd_[1];
+  jnt.j3 = cmd_[2];
+  jnt.j4 = cmd_[3];
+  jnt.j5 = cmd_[4];
+  jnt.j6 = cmd_[5];
+
+  mxt_socket_.send(boost::asio::buffer((char *)&joint_cmd, sizeof(joint_cmd)));
 }
 
 
