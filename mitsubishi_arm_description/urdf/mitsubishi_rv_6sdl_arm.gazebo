@@ -2,21 +2,14 @@
 <robot>
   <!-- base_link -->
   <gazebo reference="base_link">
-    <material>Gazebo/Orange</material>
-  </gazebo>
-
-  <!-- shoulder_block -->
-  <gazebo reference="shoulder_block">
-    <material>Gazebo/Orange</material>
-    <static>false</static>
-    <turnGravityOff>true</turnGravityOff>
+    <material>Gazebo/Lightgrey</material>
   </gazebo>
 
   <!-- shoulder -->
   <gazebo reference="shoulder">
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-    <material>Gazebo/Black</material>
+    <material>Gazebo/Lightgrey</material>
     <static>false</static>
     <turnGravityOff>true</turnGravityOff>
       <stopKd value="1.0" />
@@ -27,7 +20,7 @@
   <gazebo reference="upper_arm">
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-    <material>Gazebo/Orange</material>
+    <material>Gazebo/Lightgrey</material>
     <turnGravityOff>true</turnGravityOff>
       <stopKd value="1.0" />
       <stopKp value="1000000.0" />
@@ -37,29 +30,19 @@
   <gazebo reference="elbow">
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-    <material>Gazebo/Orange</material>
+    <material>Gazebo/Lightgrey</material>
     <static>false</static>
     <turnGravityOff>true</turnGravityOff>
       <stopKd value="1.0" />
       <stopKp value="1000000.0" />
   </gazebo>
 
-  <!-- elbow_block -->
-  <gazebo reference="elbow_block">
-    <mu1>0.2</mu1>
-    <mu2>0.2</mu2>
-    <material>Gazebo/Orange</material>
-    <static>false</static>
-    <turnGravityOff>true</turnGravityOff>
-      <stopKd value="1.0" />
-      <stopKp value="1000000.0" />
-  </gazebo>
 
   <!-- fore_arm -->
   <gazebo reference="fore_arm">
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-    <material>Gazebo/Orange</material>
+    <material>Gazebo/Lightgrey</material>
     <turnGravityOff>true</turnGravityOff>
       <stopKd value="1.0" />
       <stopKp value="1000000.0" />
@@ -69,7 +52,7 @@
   <gazebo reference="wrist">
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-    <material>Gazebo/Orange</material>
+    <material>Gazebo/Lightgrey</material>
     <turnGravityOff>true</turnGravityOff>
   </gazebo>
 
@@ -77,7 +60,7 @@
   <gazebo reference="torque_sensor">
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-    <material>Gazebo/Orange</material>
+    <material>Gazebo/Lightgrey</material>
     <turnGravityOff>true</turnGravityOff>
   </gazebo>
 
@@ -85,7 +68,7 @@
   <gazebo reference="end_effector">
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-    <material>Gazebo/Orange</material>
+    <material>Gazebo/Lightgrey</material>
     <turnGravityOff>true</turnGravityOff>
       <stopKd value="1.0" />
       <stopKp value="1000000.0" />

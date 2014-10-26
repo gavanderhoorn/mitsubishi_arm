@@ -10,12 +10,16 @@
       <geometry>
           <mesh filename="package://mitsubishi_arm_description/meshes/rv-6s_base.stl" scale="0.001 0.001 0.001"/>
       </geometry>
+      <origin rpy="${PI/2} 0 ${PI/2}"/>
+      <material name="white">
+          <color rgba="0.9 0.9 0.9 1"/>
+      </material>
     </visual>
     <collision>
       <geometry>
-    <box size="0.455 .204 .239"/>
+          <mesh filename="package://mitsubishi_arm_description/collision/rv-6s_base.stl" scale="0.001 0.001 0.001"/>
       </geometry>
-      <origin xyz="-0.1125 0 .1185"/>
+      <origin rpy="${PI/2} 0 ${PI/2}"/>
     </collision>
     <inertial>
       <origin xyz="0 0 1" rpy="0 0 0"/>
@@ -42,12 +46,16 @@
           <geometry>
               <mesh filename="package://mitsubishi_arm_description/meshes/rv-6s_shoulder.stl" scale="0.001 0.001 0.001"/>
           </geometry>
-          <origin xyz="0 0 0.016"/>
+          <origin xyz="0 0 0.038" rpy="${PI/2} 0 ${PI/2}"/>
+          <material name="grey">
+              <color rgba="0.7 0.7 0.7 1"/>
+          </material>
       </visual>
       <collision>
           <geometry>
-              <cylinder length="0.327" radius="0.079"/>
+              <mesh filename="package://mitsubishi_arm_description/collision/rv-6s_shoulder.stl" scale="0.001 0.001 0.001"/>
           </geometry>
+          <origin xyz="0 0 0.038" rpy="${PI/2} 0 ${PI/2}"/>
       </collision>
       <inertial>
           <origin xyz="0 0 1" rpy="0 0 0"/>
@@ -75,18 +83,16 @@
           <geometry>
               <mesh filename="package://mitsubishi_arm_description/meshes/rv-6s_no1arm.stl" scale="0.001 0.001 0.001"/>
           </geometry>
-          <origin xyz="0 0 0.1"/>
+          <origin xyz="0 0 0.1" rpy="0 ${-PI/2} 0"/>
+          <material name="grey">
+              <color rgba="0.7 0.7 0.7 1"/>
+          </material>
       </visual>
       <collision>
           <geometry>
-              <box size="0.090 0.380 0.02"/>
+              <mesh filename="package://mitsubishi_arm_description/collision/rv-6s_no1arm.stl" scale="0.001 0.001 0.001"/>
           </geometry>
-          <origin xyz="0 0.191 0.102"/>
-      </collision>
-      <collision>
-          <geometry>
-              <cylinder length="0.20" radius="0.079"/>
-          </geometry>
+          <origin xyz="0 0 0.1" rpy="0 ${-PI/2} 0"/>
       </collision>
       <inertial>
           <origin xyz="0 0 1" rpy="0 0 0"/>
@@ -114,18 +120,15 @@
               <mesh filename="package://mitsubishi_arm_description/meshes/rv-6s_elbow.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <origin xyz="0 0 0.1" rpy="0 ${-PI/2} ${PI}"/>
+          <material name="grey">
+              <color rgba="0.7 0.7 0.7 1"/>
+          </material>
       </visual>
       <collision>
           <geometry>
-              <cylinder length="0.20" radius="0.079"/>
+              <mesh filename="package://mitsubishi_arm_description/collision/rv-6s_elbow.stl" scale="0.001 0.001 0.001"/>
           </geometry>
-          <origin xyz="0 0 0"/>
-      </collision>
-      <collision>
-          <geometry>
-              <box size="0.25 .120 .170"/>
-          </geometry>
-          <origin xyz="0 -0.1 0"/>
+          <origin xyz="0 0 0.1" rpy="0 ${-PI/2} ${PI}"/>
       </collision>
       <inertial>
           <origin xyz="0 0 1" rpy="0 0 0"/>
@@ -141,39 +144,8 @@
       <axis xyz="0 0 1"/>
       <limit effort="1000.0" lower="${(-160+offset_from_limit)*PI/180}" upper="${(160-offset_from_limit)*PI/180}" velocity="${joint_velocity}"/>
       <parent link="elbow"/>
-      <child link="joint_arm"/>
-      <origin xyz="0.079 -0.1 0"  rpy="0 1.5707963267 0"/>
-      <dynamics damping="100.0" friction="100.0" />
-  </joint>
-
-  <!-- joint_arm -->
-  <link name="joint_arm">
-      <visual>
-          <geometry>
-              <mesh filename="package://mitsubishi_arm_description/meshes/rv-6s_joint_arm.stl" scale="0.001 0.001 0.001"/>
-          </geometry>
-      </visual>
-      <collision>
-          <geometry>
-              <box size="0.170 .120 .346"/>
-          </geometry>
-          <origin xyz="0 0 0.1815"/>
-      </collision>
-      <inertial>
-          <origin xyz="0 0 1" rpy="0 0 0"/>
-          <mass value="0.01"/>
-          <inertia 
-              ixx="1.0" ixy="0.0" ixz="0.0" 
-              iyy="1.0" iyz="0.0" 
-              izz="1.0"/>
-      </inertial>
-  </link>
-
-  <joint name="fixed_joint_1" type="fixed">
-      <axis xyz="0 0 1"/>
-      <parent link="joint_arm"/>
       <child link="fore_arm"/>
-      <origin xyz="0 0 0.127"/>
+      <origin xyz="0.0835 -0.1 0"  rpy="0 1.5707963267 0"/>
       <dynamics damping="100.0" friction="100.0" />
   </joint>
 
@@ -181,18 +153,31 @@
   <link name="fore_arm">
       <visual>
           <geometry>
+              <mesh filename="package://mitsubishi_arm_description/meshes/rv-6s_joint_arm.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+          <material name="grey">
+              <color rgba="0.7 0.7 0.7 1"/>
+          </material>
+      </visual>
+      <visual>
+          <geometry>
               <mesh filename="package://mitsubishi_arm_description/meshes/rv-6s_no2arm.stl" scale="0.001 0.001 0.001"/>
           </geometry>
-          <origin rpy="${PI/2} 0 0"/>
+          <origin xyz="0 0 0.1265" rpy="${PI/2} 0 0"/>
           <material name="blue">
               <color rgba="0 0 1 1"/>
           </material>
       </visual>
       <collision>
           <geometry>
-              <box size="0.170 .120 .346"/>
+              <mesh filename="package://mitsubishi_arm_description/collision/rv-6s_joint_arm.stl" scale="0.001 0.001 0.001"/>
           </geometry>
-          <origin xyz="0 0 0.1815"/>
+      </collision>
+      <collision>
+          <geometry>
+              <mesh filename="package://mitsubishi_arm_description/collision/rv-6s_no2arm.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+          <origin xyz="0 0 0.1265" rpy="${PI/2} 0 0"/>
       </collision>
       <inertial>
           <origin xyz="0 0 1" rpy="0 0 0"/>
@@ -209,7 +194,7 @@
       <limit effort="1000.0" lower="${(-110+offset_from_limit)*PI/180}" upper="${(110-offset_from_limit)*PI/180}" velocity="${joint_velocity}"/>
       <parent link="fore_arm"/>
       <child link="wrist"/>
-      <origin xyz="0 0 0.215"  rpy="0.0 -1.5707963267 0"/>
+      <origin xyz="0 0 0.3415"  rpy="0.0 -1.5707963267 0"/>
       <dynamics damping="100.0" friction="100.0" />
   </joint>
 
@@ -219,16 +204,19 @@
           <geometry>
               <mesh filename="package://mitsubishi_arm_description/meshes/rv-6s_wrist.stl" scale="0.001 0.001 0.001"/>
           </geometry>
-          <origin xyz="0 0.0 -0.0426" rpy="0 ${PI/2} ${-PI/2}"/>
-          <material name="red">
-              <color rgba="1 0 0 1"/>
+          <origin xyz="0 0.0 -0.047" rpy="0 ${PI/2} ${-PI/2}"/>
+          <material name="grey">
+              <color rgba="0.7 0.7 0.7 1"/>
           </material>
       </visual>
       <collision>
           <geometry>
-              <box size="0.170 .09 .080"/>
+              <mesh filename="package://mitsubishi_arm_description/collision/rv-6s_wrist.stl" scale="0.001 0.001 0.001"/>
           </geometry>
-          <origin xyz="0 0 0"/> 
+          <origin xyz="0 0.0 -0.047" rpy="0 ${PI/2} ${-PI/2}"/>
+          <material name="grey">
+              <color rgba="0.7 0.7 0.7 1"/>
+          </material>
       </collision>
       <inertial>
           <origin xyz="0 0 1" rpy="0 0 0"/>
