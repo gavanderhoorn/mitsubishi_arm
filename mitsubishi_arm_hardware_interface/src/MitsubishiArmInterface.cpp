@@ -13,6 +13,7 @@ MitsubishiArmInterface::MitsubishiArmInterface(const std::string &host_addr, con
 {
 
   pos_.resize(NUMBER_OF_JOINTS);
+  xyz_pos_.resize(NUMBER_OF_JOINTS);
   vel_.resize(NUMBER_OF_JOINTS);
   eff_.resize(NUMBER_OF_JOINTS);
   cmd_.resize(NUMBER_OF_JOINTS);
@@ -37,6 +38,7 @@ MitsubishiArmInterface::MitsubishiArmInterface(const std::string &host_addr, con
 
 MitsubishiArmInterface::~MitsubishiArmInterface()
 {
+  std::cout << "Deleting MitsubishiArmInterface" << std::endl;
   if(robot_started_)
   {
     stopRobot();
@@ -60,9 +62,7 @@ int MitsubishiArmInterface::initializeSockets(void)
     // UDP for mxt Real-time control
     udp::resolver udp_resolver(io_service_);
     udp::resolver::query udp_query(udp::v4(), host_addr_, mxt_port_);
-    //host_endpoint_ = *udp_resolver.resolve(udp_query);
     connect(mxt_socket_, udp_resolver.resolve(udp_query));
-    //mxt_socket_.open(udp::v4());
 
   }
   catch (std::exception& e)
@@ -137,6 +137,8 @@ bool MitsubishiArmInterface::init()
 
 int MitsubishiArmInterface::startRobot()
 {
+  if (robot_started_)
+    return 0;
   // Just send the password return the result
   char buf[] = ROBOT_PASSWORD;
   boost::asio::write(ctrl_socket_, boost::asio::buffer(buf, strlen(buf)));
@@ -164,6 +166,7 @@ int MitsubishiArmInterface::startRobot()
 
 void MitsubishiArmInterface::stopRobot()
 {
+  std::cout << "Stopping robot" << std::endl;
   // Just send the password return the result
   MXTCMD end_cmd;
   memset(&end_cmd, 0, sizeof(end_cmd));
@@ -178,24 +181,28 @@ void MitsubishiArmInterface::readHW()
   MXTCMD joint_request;
   MXTCMD joint_cmd_reply;
   memset(&joint_request, 0, sizeof(joint_request));
-  joint_request.RecvType= MXT_TYP_JOINT;
+  joint_request.RecvType= MXT_TYP_POSE;
+  joint_request.RecvType1= MXT_TYP_JOINT;
 
   mxt_socket_.send(boost::asio::buffer((char *)&joint_request, sizeof(joint_request)));
   mxt_socket_.receive(boost::asio::buffer((char *)&joint_cmd_reply,sizeof(joint_cmd_reply)));
 
+  POSE& pos = joint_cmd_reply.dat.pos;
+  xyz_pos_[0] = pos.w.x;
+  xyz_pos_[1] = pos.w.y;
+  xyz_pos_[2] = pos.w.z;
+  xyz_pos_[3] = pos.w.a;
+  xyz_pos_[4] = pos.w.b;
+  xyz_pos_[5] = pos.w.c;
+
   //boost::mutex::scoped_lock lock(io_mutex);
-  JOINT& jnt = joint_cmd_reply.dat.jnt;
+  JOINT& jnt = joint_cmd_reply.dat1.jnt1;
   pos_[0] = jnt.j1;
   pos_[1] = jnt.j2;
   pos_[2] = jnt.j3;
   pos_[3] = jnt.j4;
   pos_[4] = jnt.j5;
   pos_[5] = jnt.j6;
-  pos_[6] = jnt.j7;
-  pos_[7] = jnt.j8;
-
-  // Not sure if this is necessary
-
 
 }
 
@@ -203,22 +210,15 @@ void MitsubishiArmInterface::readHW()
 #define JOINT_EPSILON 0.00001
 void MitsubishiArmInterface::writeHW() {
 
-  ROS_INFO_STREAM_THROTTLE(0.1,"cmd_: " 
-      << cmd_[0] << " "
-      << cmd_[1] << " "
-      << cmd_[2] << " "
-      << cmd_[3] << " "
-      << cmd_[4] << " "
-      << cmd_[5] << " "
-      << cmd_[6] << " "
-      << cmd_[7]);
-  ROS_DEBUG_STREAM_THROTTLE(0.1,"cmd_prev_: " 
-      << cmd_previous_[0] << " "
-      << cmd_previous_[1] << " "
-      << cmd_previous_[2] << " "
-      << cmd_previous_[3] << " "
-      << cmd_previous_[4] << " "
-      << cmd_previous_[5]);
+  //ROS_INFO_STREAM_THROTTLE(0.1,"cmd_: " 
+  //    << cmd_[0] << " "
+  //    << cmd_[1] << " "
+  //    << cmd_[2] << " "
+  //    << cmd_[3] << " "
+  //    << cmd_[4] << " "
+  //    << cmd_[5] << " "
+  //    << cmd_[6] << " "
+  //    << cmd_[7]);
 
   if(isEqual(cmd_previous_[0],cmd_[0],JOINT_EPSILON)&&
       isEqual(cmd_previous_[1],cmd_[1],JOINT_EPSILON)&&
@@ -238,17 +238,12 @@ void MitsubishiArmInterface::writeHW() {
   cmd_previous_=cmd_;
 
   MXTCMD joint_cmd;
+  MXTCMD joint_cmd_reply;
   memset(&joint_cmd, 0, sizeof(joint_cmd));
   joint_cmd.Command = MXT_CMD_MOVE;
   joint_cmd.SendType = MXT_TYP_JOINT;
+  joint_cmd.RecvType = MXT_TYP_JOINT;
 
-  //POSE& pose = joint_cmd.dat.pos;
-  //pose.w.x = 540;
-  //pose.w.y = -10;
-  //pose.w.z = 685;
-  //pose.w.a = 3.14;
-  //pose.w.b = -0.0017;
-  //pose.w.c = 0.0016;
   JOINT& jnt = joint_cmd.dat.jnt;
   jnt.j1 = cmd_[0];
   jnt.j2 = cmd_[1];
@@ -256,8 +251,11 @@ void MitsubishiArmInterface::writeHW() {
   jnt.j4 = cmd_[3];
   jnt.j5 = cmd_[4];
   jnt.j6 = cmd_[5];
+  //joint_cmd.dat.pos.sflg1 = pose_now_.sflg1;
+  //joint_cmd.dat.pos.sflg2 = pose_now_.sflg2;
 
   mxt_socket_.send(boost::asio::buffer((char *)&joint_cmd, sizeof(joint_cmd)));
+  mxt_socket_.receive(boost::asio::buffer((char *)&joint_cmd_reply,sizeof(joint_cmd_reply)));
 }
 
 

@@ -45,6 +45,8 @@ public:
 
     bool init();
 
+    int startRobot();
+    void stopRobot();
 
 
 
@@ -58,9 +60,11 @@ private:
     hardware_interface::PositionJointInterface jnt_pos_interface_;
     std::vector<double> cmd_;
     std::vector<double> pos_;
+    std::vector<double> xyz_pos_;
     std::vector<double> vel_;
     std::vector<double> eff_;
     std::vector<double> cmd_previous_;
+
     //boost::mutex io_mutex;
 
     std::string host_addr_;
@@ -78,7 +82,5 @@ private:
     bool init(hardware_interface::JointStateInterface &jnt_state_interface,
               hardware_interface::PositionJointInterface &jnt_pos_interface);
 
-    int startRobot();
-    void stopRobot();
 };
 
