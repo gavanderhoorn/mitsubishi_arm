@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <launch>
 
-   <arg name="simulation" default="true"/>
+   <arg name="simulation" default="false"/>
 
    <group if="$(arg simulation)">
-  	<!-- Load joint controller configurations from YAML file to parameter server -->
-  	<rosparam file="$(find mitsubishi_arm_control)/config/mitsubishi_arm_control_gazebo.yaml" command="load"/>
+   <!-- Load joint controller configurations from YAML file to parameter server -->
+   <rosparam file="$(find mitsubishi_arm_control)/config/mitsubishi_arm_control_gazebo.yaml" command="load"/>
    </group>
    <group unless="$(arg simulation)">
-  	<!-- Load joint controller configurations from YAML file to parameter server -->
-  	<rosparam file="$(find mitsubishi_arm_control)/config/mitsubishi_arm_control.yaml" command="load"/>
+   <!-- Load joint controller configurations from YAML file to parameter server -->
+   <rosparam file="$(find mitsubishi_arm_control)/config/mitsubishi_arm_control.yaml" command="load"/>
    </group>
 
   <node ns="/mitsubishi_arm" name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller mitsubishi_trajectory_controller"/>

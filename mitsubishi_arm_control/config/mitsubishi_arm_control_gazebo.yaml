@@ -6,33 +6,33 @@ mitsubishi_arm:
   
   # Position Controllers ---------------------------------------
   joint1_position_controller:
-    type: effort_controllers/JointPositionController
+    type: position_controllers/JointPositionController
     joint: j1
     pid: {p: 100.0, i: 0.01, d: 10.0}
   joint2_position_controller:
-    type: effort_controllers/JointPositionController
+    type: position_controllers/JointPositionController
     joint: j2
     pid: {p: 100.0, i: 0.01, d: 10.0}
   joint3_position_controller:
-    type: effort_controllers/JointPositionController
+    type: position_controllers/JointPositionController
     joint: j3
     pid: {p: 100.0, i: 0.01, d: 10.0}
   joint4_position_controller:
-    type: effort_controllers/JointPositionController
+    type: position_controllers/JointPositionController
     joint: j4
     pid: {p: 100.0, i: 0.01, d: 10.0}
   joint5_position_controller:
-    type: effort_controllers/JointPositionController
+    type: position_controllers/JointPositionController
     joint: j5
     pid: {p: 100.0, i: 0.01, d: 10.0}
   joint6_position_controller:
-    type: effort_controllers/JointPositionController
+    type: position_controllers/JointPositionController
     joint: j6
     pid: {p: 100.0, i: 0.01, d: 10.0}
 
   # Trajectory Controllers ---------------------------------------
   mitsubishi_trajectory_controller:
-    type: effort_controllers/JointTrajectoryController
+    type: position_controllers/JointTrajectoryController
     joints:
       - j1
       - j2
@@ -78,5 +78,5 @@ mitsubishi_arm:
       j5:
         trajectory: 0.01
       j6:
-        trajectory: -1.0
+        trajectory: 0.01
 
