@@ -36,7 +36,7 @@ include_directories(include
 
 add_library(mitsubishi_arm_hardware_interface src/MitsubishiArmInterface.cpp)
 set_target_properties(mitsubishi_arm_hardware_interface PROPERTIES COMPILE_FLAGS "-Wall -g -O0")
-#add_library(mitsubishi_arm_hardware_interface_dummy src/MitsubishiArmInterfaceDummy.cpp)
+add_library(mitsubishi_arm_hardware_interface_dummy src/MitsubishiArmInterfaceDummy.cpp)
 
 
 add_executable(mitsubishi_arm_hardware_interface_node src/Robot.cpp)
@@ -50,11 +50,12 @@ target_link_libraries(mitsubishi_arm_hardware_interface_node mitsubishi_arm_hard
 #target_link_libraries(joint_trajectory_action_client mitsubishi_arm_hardware_interface
 #   ${catkin_LIBRARIES}
 #)
-#add_executable(mitsubishi_arm_hardware_interface_dummy_node src/Robot.cpp)
-## Specify libraries to link a library or executable target against
-#target_link_libraries(mitsubishi_arm_hardware_interface_dummy_node mitsubishi_arm_hardware_interface_dummy
-#   ${catkin_LIBRARIES}
-#)
+add_executable(mitsubishi_arm_hardware_interface_dummy_node src/Robot.cpp)
+# Specify libraries to link a library or executable target against
+target_link_libraries(mitsubishi_arm_hardware_interface_dummy_node mitsubishi_arm_hardware_interface_dummy
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
+)
 
 #############
 ## Install ##

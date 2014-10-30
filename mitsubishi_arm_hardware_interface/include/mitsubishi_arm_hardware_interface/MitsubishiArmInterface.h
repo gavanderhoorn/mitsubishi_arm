@@ -15,7 +15,6 @@
 #include <ros/ros.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_state_interface.h>
-#include <joint_trajectory_controller/hardware_interface_adapter.h>
 
 #include <hardware_interface/robot_hw.h>
 #include <sensor_msgs/JointState.h>

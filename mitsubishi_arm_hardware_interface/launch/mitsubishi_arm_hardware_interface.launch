@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+  <arg name="dummy" default="false"/>
   <arg name="model" default="$(find mitsubishi_arm_description)/robots/mitsubishi_rv_6sdl.urdf.xacro"/>
   <arg name="gui" default="False" />
 
@@ -8,7 +9,13 @@
   <param name="/mitsubishi_arm/mitsubishi_port" value="10003" />
   <param name="/mitsubishi_arm/mitsubishi_mtx_port" value="10000" />
 
-  <node ns="/mitsubishi_arm" name="mitsubishi_arm_hardware_interface" pkg="mitsubishi_arm_hardware_interface" type="mitsubishi_arm_hardware_interface_node" respawn="false" output="screen"
-    required="true" />
+  <group if="$(arg dummy)">
+    <node ns="/mitsubishi_arm" name="mitsubishi_arm_hardware_interface_dummy" pkg="mitsubishi_arm_hardware_interface" type="mitsubishi_arm_hardware_interface_dummy_node" respawn="false" output="screen"
+      required="true" />
+  </group>
+  <group unless="$(arg dummy)">
+    <node ns="/mitsubishi_arm" name="mitsubishi_arm_hardware_interface" pkg="mitsubishi_arm_hardware_interface" type="mitsubishi_arm_hardware_interface_node" respawn="false" output="screen"
+      required="true" />
+  </group>
 
 </launch>

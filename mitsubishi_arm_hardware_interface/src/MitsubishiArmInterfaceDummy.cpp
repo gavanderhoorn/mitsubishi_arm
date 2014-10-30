@@ -1,8 +1,15 @@
 #include <mitsubishi_arm_hardware_interface/MitsubishiArmInterface.h>
 #include <sstream>
+using namespace boost;
+using namespace boost::asio::ip;
 
-MitsubishiArmInterface::MitsubishiArmInterface(const std::string &ip_addr, const std::string&  ctrl_port, const std::string& mtx_port):
-  ip_addr_(ip_addr), ctrl_port_(ctrl_port), mtx_port_(mtx_port) {
+MitsubishiArmInterface::MitsubishiArmInterface(const std::string &host_addr, const std::string&  ctrl_port, const std::string& mxt_port):
+  host_addr_(host_addr), 
+  ctrl_port_(ctrl_port),
+  mxt_port_(mxt_port),
+  ctrl_socket_(io_service_),
+  mxt_socket_(io_service_)
+{
     //joint_state_pub=n_priv.advertise<sensor_msgs::JointState>( "joint_states", 1);
 
     pos_.resize(NUMBER_OF_JOINTS);
@@ -63,9 +70,12 @@ bool MitsubishiArmInterface::init() {
   jnt_pos_interface_.registerHandle(pos_handle_j6);
 
   registerInterface(&jnt_pos_interface_);
+
+  return true;
 }
+
 void MitsubishiArmInterface::readHW() {
-  ros::Duration(0.025).sleep();
+  ros::Duration(0.005).sleep();
 
   // convert to radians and add to state
   /*    for(int i=0; i< pos_.size(); ++i)
@@ -109,8 +119,8 @@ void MitsubishiArmInterface::writeHW() {
   }
   static int new_command_count=0;
   new_command_count++;
-  std::cout << "new command:"<< new_command_count << " " <<cmd_[1] << std::endl;
-  ros::Duration(0.025).sleep();
+  ROS_INFO_STREAM_THROTTLE(0.1,"New command. Writing to robot");
+  ros::Duration(0.005).sleep();
 }
 
 
