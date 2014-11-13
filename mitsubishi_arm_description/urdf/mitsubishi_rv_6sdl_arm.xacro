@@ -81,7 +81,7 @@
   <link name="upper_arm">
       <visual>
           <geometry>
-              <mesh filename="package://mitsubishi_arm_description/meshes/rv-6s_no1arm.stl" scale="0.001 0.001 0.001"/>
+              <mesh filename="package://mitsubishi_arm_description/meshes/rv-6s_no1arm_col.dae" scale="0.001 0.001 0.001"/>
           </geometry>
           <origin xyz="0 0 0.1" rpy="0 ${-PI/2} 0"/>
           <material name="grey">

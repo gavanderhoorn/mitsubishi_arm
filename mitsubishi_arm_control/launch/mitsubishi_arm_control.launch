@@ -12,9 +12,9 @@
    <rosparam file="$(find mitsubishi_arm_control)/config/mitsubishi_arm_control.yaml" command="load"/>
    </group>
 
-  <node ns="/mitsubishi_arm" name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller mitsubishi_trajectory_controller"/>
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller mitsubishi_trajectory_controller"/>
 
   <!-- Given the published joint states, publish tf for the robot links -->
-  <node ns="/mitsubishi_arm" name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
 
 </launch>

@@ -2,13 +2,14 @@
 <launch>
 
    <arg name="simulation" default="false" />
+   <group ns="/mitsubishi_arm">
 
    <group if="$(arg simulation)">
   	<!-- Load mitsubishi arm hardware interface and controller manager -->
   	<include file="$(find mitsubishi_arm_gazebo)/launch/mitsubishi_arm_world.launch"/>
 
   	<!-- Given the published joint states, publish tf for the robot links -->
-  	<include file="$(find mitsubishi_arm_config)/launch/moveit_gazebo.launch"/>
+    <include file="$(find mitsubishi_arm_config)/launch/moveit_gazebo.launch"/>
    </group>
    <group unless="$(arg simulation)">
   	<!-- Load mitsubishi arm hardware interface and controller manager -->
@@ -23,6 +24,7 @@
     <arg name="simulation" value="$(arg simulation)" />
   </include>
 
+   </group>
  <!--  <node name="static_environment" pkg="mitsubishi_arm_move" type="static_environment" /> -->
 </launch>
 
