@@ -43,6 +43,8 @@
   <run_depend>mitsubishi_arm_description</run_depend>
   <run_depend>mitsubishi_arm_control</run_depend> 
   <run_depend>gazebo_ros</run_depend>
+  <run_depend>gazebo_ros_pkgs</run_depend>
+  <run_depend>gazebo_ros_control</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
