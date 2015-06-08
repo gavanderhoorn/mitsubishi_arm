@@ -232,53 +232,49 @@
       <axis xyz="0 0 1"/>
       <limit effort="1000.0" lower="${(-360+offset_from_limit)*PI/180}" upper="${(360-offset_from_limit)*PI/180}" velocity="${joint_velocity}"/>
       <parent link="wrist"/>
-      <!--<child link="torque_sensor"/>-->
-      <child link="end_effector"/>
+      <child link="torque_sensor"/>
       <origin xyz="0.085 0 0"  rpy="0 1.5707963267 0"/>
       <dynamics damping="10.0" friction="100.0" />
   </joint>
 
-  <!-- torque_sensor -->
-  <!--
-     -<link name="torque_sensor">
-     -  <visual>
-     -   <geometry>
-     -  <cylinder  length="0.065" radius="0.065"/>
-     -    </geometry>
-     -    <origin xyz="0 0 0.0325"/> 
-     -    <material name="orange">
-     -      <color rgba="1 1 1 1"/>
-     -    </material>
-     -  </visual>
-     -  <collision>
-     -   <geometry>
-     -  <cylinder  length="0.065" radius="0.065"/>
-     -    </geometry>
-     -    <origin xyz="0 0 0.0325"/> 
-     -    <material name="orange">
-     -      <color rgba="1 1 1 1"/>
-     -    </material>
-     -  </collision>
-     -  <inertial>
-     -    <origin xyz="0 0 1" rpy="0 0 0"/>
-     -    <mass value="0.01"/>
-     -    <inertia 
-     -      ixx="1.0" ixy="0.0" ixz="0.0" 
-     -      iyy="1.0" iyz="0.0" 
-     -      izz="1.0"/>
-     -  </inertial>
-     -</link>
-     -->
+  <!--torque_sensor/magnet -->
+  <link name="torque_sensor">
+    <visual>
+     <geometry>
+    <cylinder  length="0.111" radius="0.038"/>
+      </geometry>
+      <origin xyz="0 0 0.0550"/> 
+      <material name="orange">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+     <geometry>
+    <cylinder  length="0.0111" radius="0.038"/>
+      </geometry>
+      <origin xyz="0 0 0.0550"/> 
+      <material name="orange">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 1" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia 
+        ixx="1.0" ixy="0.0" ixz="0.0" 
+        iyy="1.0" iyz="0.0" 
+        izz="1.0"/>
+    </inertial>
+  </link>
 
 
-  <!--<joint name="torque_sensor_joint" type="fixed">-->
-      <!--  <axis xyz="0 0 1"/>-->
-      <!--  <limit effort="1000.0" lower="${(-360+offset_from_limit)*PI/180}" upper="${(360-offset_from_limit)*PI/180}" velocity="0.2"/>-->
-      <!--  <parent link="torque_sensor"/>-->
-      <!--  <child link="end_effector"/>-->
-      <!--  <origin xyz="0 0 0.065"  rpy="0 0 0"/> [> original is 0.085 but we have the torque sensor...<]-->
-      <!-- <dynamics damping="100.0" friction="100.0" />-->
-      <!--</joint>-->
+  <joint name="torque_sensor_joint" type="fixed">
+    <axis xyz="0 0 1"/>
+    <parent link="torque_sensor"/>
+    <child link="end_effector"/>
+    <origin xyz="0 0 0.111"  rpy="0 0 0"/> 
+    <dynamics damping="100.0" friction="100.0" />
+  </joint>
 
   <!-- end_effector -->
   <link name="end_effector">
