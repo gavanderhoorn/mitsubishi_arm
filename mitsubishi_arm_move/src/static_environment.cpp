@@ -1,4 +1,4 @@
-#include <moveit/move_group_interface/move_group.h>
+#include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 #include <moveit_msgs/DisplayRobotState.h>
@@ -14,8 +14,7 @@ int main(int argc, char **argv)
   ros::AsyncSpinner spinner(1);
   spinner.start();
 
-  moveit::planning_interface::MoveGroup group("arm");
-
+  moveit::planning_interface::MoveGroupInterface group("arm");
   // We will use the :planning_scene_interface:`PlanningSceneInterface`
   // class to deal directly with the world.
   moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
