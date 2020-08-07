@@ -4,7 +4,7 @@
   <arg name="model" default="$(find mitsubishi_arm_description)/robots/mitsubishi_rv_6sdl.urdf.xacro"/>
   <arg name="gui" default="False" />
 
-  <param name="/mitsubishi_arm/robot_description" command="$(find xacro)/xacro.py $(arg model)" />
+  <param name="/mitsubishi_arm/robot_description" command="$(find xacro)/xacro $(arg model)" />
   <!--<param name="/mitsubishi_arm/mitsubishi_host" value="localhost" />-->
   <param name="/mitsubishi_arm/mitsubishi_port" value="10003" />
   <param name="/mitsubishi_arm/mitsubishi_mtx_port" value="10000" />
