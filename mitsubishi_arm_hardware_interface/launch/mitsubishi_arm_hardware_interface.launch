@@ -10,7 +10,7 @@
   <param name="/mitsubishi_arm/mitsubishi_mtx_port" value="10000" />
 
   <group if="$(arg dummy)">
-    <node ns="/mitsubishi_arm" name="mitsubishi_arm_hardware_interface_dummy" pkg="mitsubishi_arm_hardware_interface" type="mitsubishi_arm_hardware_interface_dummy_node" respawn="false" output="screen"
+    <node name="mitsubishi_arm_hardware_interface_dummy" pkg="mitsubishi_arm_hardware_interface" type="mitsubishi_arm_hardware_interface_dummy_node" respawn="false" output="screen"
       required="true" />
   </group>
   <group unless="$(arg dummy)">
