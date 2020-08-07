@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+    
+    <!-- Hardware interface -->
+    <include file="$(find mitsubishi_arm_hardware_interface)/launch/mitsubishi_arm_hardware_interface.launch">
+      <arg name="dummy" value="true"/>
+      <arg name="model" value="$(find mitsubishi_arm_description)/robots/mitsubishi_rv_6sdl.urdf.xacro"/>
+      <arg name="gui" value="False" />
+    </include>
+
+    <!-- Controllers -->
+    <include file="$(find mitsubishi_arm_control)/launch/mitsubishi_arm_control.launch">
+        <arg name="simulation" value="false"/>
+    </include>
+
+    <!-- Moveit -->
+    <include file="$(find mitsubishi_arm_config)/launch/moveit.launch">
+    </include>
+</launch>
